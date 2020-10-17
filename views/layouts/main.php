@@ -9,7 +9,7 @@ use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
 use yii\widgets\Breadcrumbs;
 use app\assets\AppAsset;
-
+use \app\models\User;
 AppAsset::register($this);
 ?>
 <?php $this->beginPage() ?>
@@ -35,25 +35,33 @@ AppAsset::register($this);
             'class' => 'navbar-inverse navbar-fixed-top',
         ],
     ]);
+
+    // будет хранить коэфициет конвертации, чтобы затем отобразить пользователю будущий результат
+    $ratio = Yii::$app->params["rules"]["ratio"];
+    echo Html::hiddenInput('ratio', $ratio);
+    echo Html::hiddenInput('action', Yii::$app->urlManager->createUrl(['site/convert']));
+
+    $items = [
+
+        ['label' => 'Home', 'url' => ['/site/index']],
+        !Yii::$app->user->isGuest ? ['label' => 'Мои деньги: ' . $this->params['sum']] : '',
+        !Yii::$app->user->isGuest ? ['label' => 'Мои баллы: ' . User::findOne(['id' => Yii::$app->user->identity->id])->points . ' (' . 'коэф.:' . $ratio . ')'] : '',
+        Yii::$app->user->isGuest ? (
+        ['label' => 'Login', 'url' => ['/site/login']]
+        ) : (
+            '<li>'
+            . Html::beginForm(['/site/logout'], 'post')
+            . Html::submitButton(
+                'Logout (' . Yii::$app->user->identity->login . ')',
+                ['class' => 'btn btn-link logout']
+            )
+            . Html::endForm()
+            . '</li>'
+        )
+    ];
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav navbar-right'],
-        'items' => [
-            ['label' => 'Home', 'url' => ['/site/index']],
-            ['label' => 'About', 'url' => ['/site/about']],
-            ['label' => 'Contact', 'url' => ['/site/contact']],
-            Yii::$app->user->isGuest ? (
-                ['label' => 'Login', 'url' => ['/site/login']]
-            ) : (
-                '<li>'
-                . Html::beginForm(['/site/logout'], 'post')
-                . Html::submitButton(
-                    'Logout (' . Yii::$app->user->identity->login . ')',
-                    ['class' => 'btn btn-link logout']
-                )
-                . Html::endForm()
-                . '</li>'
-            )
-        ],
+        'items' => $items
     ]);
     NavBar::end();
     ?>
