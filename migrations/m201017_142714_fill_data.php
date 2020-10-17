@@ -29,7 +29,7 @@ class m201017_142714_fill_data extends Migration
                 'value'
             ],
             [
-                [ 'money', Yii::$app->params['rules']['total'] ],
+                [ 'money', Yii::$app->params['rules']['moneyLimit'] ],
                 [ 'items', Yii::$app->params['rules']['itemsLimit'] ]
             ]
         );
