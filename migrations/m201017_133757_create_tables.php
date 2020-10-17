@@ -20,9 +20,10 @@ class m201017_133757_create_tables extends Migration
             'authKey' => $this->string()
         ]);
 
+
         $this->createTable('prizes', [
             'id' => $this->primaryKey(),
-            'type' => "ENUM('money', 'item')",
+            'type' => "ENUM(" . "'" . implode("', '", Yii::$app->params['rules']['types']) . "'"  . ")",
             'value' => $this->string(),
             'user_id' => $this->integer(),
             'sent_datetime' => $this->dateTime()
