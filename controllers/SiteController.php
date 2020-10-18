@@ -2,15 +2,16 @@
 
 namespace app\controllers;
 
+use app\models\Limit;
 use app\models\Prize;
 use Yii;
-use yii\db\Query;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
+use app\models\Game;
 
 class SiteController extends Controller
 {
@@ -70,25 +71,23 @@ class SiteController extends Controller
         $itemPrizes = Prize::findAll(['type' => 'item', 'user_id' => Yii::$app->user->identity->id]);
 
         // отобразить в лейауте общую сумму текущего пользователя
-        $sum = (new Query())
+        $sum = Prize::find()
             ->select('value')
-            ->from('prizes')
             ->where(['user_id' => Yii::$app->user->identity->id])
             ->sum('value');
         $this->view->params['sum'] = $sum ? $sum : 0;
 
         // возмем данные по лимитам денег и предметов
-        $limitsResult = (new Query())
+        $limitsResult = Limit::find()
             ->select('value')
-            ->from('limits')
             ->where(['for_type' => 'money'])
             ->orWhere(['for_type' => 'items'])
-            ->all();
-        $moneyLimit = $limitsResult[0]['value'];
-        $itemsLimit = $limitsResult[1]['value'];
+            ->column();
+        $moneyLimit = $limitsResult[0];
+        $itemsLimit = $limitsResult[1];
         // если максимальный выигыш меньше, чем оставшийся баланс, то максимальный выигрыш делаем оставшимся балансом
-        $moneyLimit = Yii::$app->params['rules']['maxPrize'] < $moneyLimit
-            ? Yii::$app->params['rules']['maxPrize']
+        $moneyLimit = Yii::$app->params['rules']['maxMoney'] < $moneyLimit
+            ? Yii::$app->params['rules']['maxMoney']
             : $moneyLimit;
 
         return $this->render('index', [
