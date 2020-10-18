@@ -99,6 +99,33 @@ class SiteController extends Controller
     }
 
     /**
+     * Запуск игры
+     * @return array информация об итоге
+     * @throws \yii\db\Exception
+     */
+    public function actionPlay()
+    {
+        // для розыгрыша выбираем те типы призов, чей лимит еще не исчерпан, либо которые не имеют лимита
+        $types = Limit::find()
+            ->select('for_type')
+            ->where(['>', 'value', 0])
+            ->column();
+        $types[] = 'points'; // добавим баллы, т.к. баллы участвуют всегда
+
+        // случайным образом выберем тип разыгрываемого приза
+        $rand = rand(0, count($types) - 1);
+        $prizeType = $types[$rand];
+
+        $result = (new Game())->play($prizeType); // запустим розыгрыш
+
+        Yii::$app->response->format = yii\web\Response::FORMAT_JSON;
+        return [
+            $prizeType,
+            $result
+        ];
+    }
+
+    /**
      * Login action.
      *
      * @return Response|string
