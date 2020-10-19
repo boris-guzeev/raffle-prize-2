@@ -13,6 +13,9 @@ class Converter
 {
     public function toPoints($money, $ratio)
     {
+        if (! is_numeric($ratio)) {
+            throw new \Exception('$ratio - должнен быть положительным числом больше 0');
+        }
         if (is_numeric($money) && $money > 0) {
             return intval(round($money * $ratio));
         } else {
