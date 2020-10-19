@@ -11,8 +11,19 @@ use yii\db\Query;
  */
 class Game
 {
-    public function play($prizeType)
+    public function play()
     {
+        // для розыгрыша выбираем те типы призов, чей лимит еще не исчерпан, либо которые не имеют лимита
+        $types = Limit::find()
+            ->select('for_type')
+            ->where(['>', 'value', 0])
+            ->column();
+        $types[] = 'points'; // добавим баллы, т.к. баллы участвуют всегда
+
+        // случайным образом выберем тип разыгрываемого приза
+        $rand = rand(0, count($types) - 1);
+        $prizeType = $types[$rand];
+
         $user = User::findOne(['id' => Yii::$app->user->identity->id]);
         if ($prizeType == 'points') {
             $result = rand(Yii::$app->params['rules']['minPoints'], Yii::$app->params['rules']['maxPoints']);
