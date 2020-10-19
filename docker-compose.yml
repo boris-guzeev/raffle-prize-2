@@ -1,9 +1,32 @@
-version: '2'
+version: '3'
 services:
-  php:
-    image: yiisoftware/yii2-php:7.1-apache
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - APACHE_RUN_USER=www-data
     volumes:
-      - ~/.composer-docker/cache:/root/.composer/cache:delegated
-      - ./:/app:delegated
+      - ${APP_PATH_HOST}:${APP_PATH_CONTAINER}
     ports:
-      - '8000:80'
+      - 8080:80
+    working_dir: ${APP_PATH_CONTAINER}
+
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 6080:8080
+
+  composer:
+    image: composer:1.9
+    volumes:
+      - ${APP_PATH_HOST}:${APP_PATH_CONTAINER}
+    working_dir: ${APP_PATH_CONTAINER}
+    command: composer install
