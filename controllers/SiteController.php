@@ -2,8 +2,10 @@
 
 namespace app\controllers;
 
+use app\models\Converter;
 use app\models\Limit;
 use app\models\Prize;
+use app\models\User;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -12,6 +14,7 @@ use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\Game;
+use yii\db\Exception;
 
 class SiteController extends Controller
 {
@@ -111,6 +114,62 @@ class SiteController extends Controller
         return [
             $result
         ];
+    }
+
+    /**
+     * Конвертация денег в баллы лояльности
+     *
+     * @param $prizeId <p>Ид денежного приза текущего пользователя</p>
+     * @return integer <p>Число очков, которое получилось после конвертации</p>
+     * @throws \Throwable
+     */
+    public function actionMoneyPoint($prizeId)
+    {
+        $points = 0;
+        // найдем нужный денеждый приз
+        $money = Prize::find()
+            ->select('value')
+            ->where(['type' => 'money', 'id' => $prizeId, 'user_id' => Yii::$app->user->identity->id])
+            ->scalar();
+        if ($money) {
+            $converter = new Converter();
+            $ratio = \Yii::$app->params['rules']['ratio'];
+            $points = $converter->toPoints($money, $ratio);
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                $prize = Prize::findOne($prizeId);
+                $prize->delete();
+                $user = User::findOne(['id' => Yii::$app->user->identity->id]);
+                $user->points += $points;
+                $user->save();
+                $transaction->commit();
+
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+        }
+        return $points;
+    }
+
+    /**
+     * Конвертация предметов в деньги
+     *
+     * @param $prizeId <p>Ид приза-предмета текущего пользователя</p>
+     * @return string <p>Стоимость после конвертации</p>
+     */
+    public function actionItemMoney($prizeId)
+    {
+        $item = Prize::find()
+            ->where(['type' => 'items', 'id' => $prizeId, 'user_id' => Yii::$app->user->identity->id])
+            ->one();
+        $converter = new Converter();
+        $price = $converter->toMoney($item->value);
+        $item->type = 'money';
+        $item->value = $price;
+        $item->save();
+
+        return $price;
     }
 
     /**
